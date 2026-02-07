@@ -3,7 +3,6 @@ from airflow.operators.python import PythonOperator
 from datetime import datetime
 
 # Import the transformation functions
-# Ensure your python file is named 'transformation_functions.py' inside 'dags/auto_script/'
 from auto_script.transformation_functions import (
     create_dim_user,
     create_dim_product,
@@ -15,14 +14,14 @@ from auto_script.transformation_functions import (
 )
 
 # ==========================================
-# DAG CONFIGURATION
+#             DAG CONFIGURATION
 # ==========================================
 START_DATE = datetime(2023, 1, 1)
 
 with DAG(
     'unified_transformation_dag',
     start_date=START_DATE,
-    schedule_interval=None, # Triggered externally (by Master DAG)
+    schedule_interval=None, 
     catchup=False,
     tags=['dw', 'transformation', 'star_schema', 'merging']
 ) as dag:
@@ -81,4 +80,5 @@ with DAG(
     # 2. Create Fact Table (reads from Dimensions)
     # 3. Create Views (reads from Fact & Dimensions)
     
+
     [t_dim_user, t_dim_prod, t_dim_camp, t_dim_merch, t_dim_staff] >> t_fact_order >> t_create_views
