@@ -30,18 +30,15 @@ from auto_script.validation_customer_mgt import validate_cleaned_tables_customer
 # ==========================================
 
 def generic_ingestion(path, schema_name):
-    """
-    Generic function to handle ingestion for any department.
-    """
     hook = PostgresHook(postgres_conn_id="postgres_staging")
     engine = hook.get_sqlalchemy_engine()
     conn = hook.get_conn()
     
-    # Ensure Schema Exists
+    # Validate if Schema Exists in the Database
     with conn.cursor() as cursor:
         cursor.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name};")
         conn.commit()
-    print(f"✅ Schema '{schema_name}' is ready.")
+    print(f"Schema '{schema_name}' is ready.")
 
     for filename in os.listdir(path):
         file_path = os.path.join(path, filename)
@@ -60,12 +57,12 @@ def generic_ingestion(path, schema_name):
                     print(f"Skipping unsupported file: {filename}")
                     continue
             except Exception as e:
-                print(f"❌ Error reading {filename}: {e}")
+                print(f"Error reading {filename}: {e}")
                 raise e
 
             if df is not None:
                 df["source_file"] = filename
-                # Sanitize table name
+                # Reformat Table Names 
                 table_name = filename.split(".")[0].replace(" ", "_").replace("-", "_").replace(".", "_").lower()
 
                 try:
@@ -81,7 +78,7 @@ def generic_ingestion(path, schema_name):
                     print(f"❌ Error uploading {schema_name}.{table_name}: {e}")
                     raise e
 
-# Specific wrappers for clarity in DAGs
+
 def operation_department(path): generic_ingestion(path, 'operation_staging')
 def enterprise_department(path): generic_ingestion(path, 'enterprise_staging')
 def business_department(path): generic_ingestion(path, 'business_staging')
@@ -90,7 +87,7 @@ def customer_management_department(path): generic_ingestion(path, 'customer_mana
 
 
 # ==========================================
-# 2. DAG DEFINITIONS
+#              DAG DEFINITIONS
 # ==========================================
 
 START_DATE = datetime(2023, 1, 1)
@@ -114,7 +111,7 @@ with DAG('operation_department_dag', start_date=START_DATE, schedule_interval=No
     )
     t_op1 >> t_op2 >> t_op3
 
-# --- 2. ENTERPRISE  ---
+# --- 2. ENTERPRISE (Full Pipeline)  ---
 with DAG('enterprise_department_dag', start_date=START_DATE, schedule_interval=None, catchup=False) as dag_ent:
     t_ent1 = PythonOperator(
         task_id='process_enterprise_department',
@@ -133,7 +130,7 @@ with DAG('enterprise_department_dag', start_date=START_DATE, schedule_interval=N
     )
     t_ent1 >> t_ent2 >> t_ent3
 
-# --- 3. BUSINESS  ---
+# --- 3. BUSINESS (Full Pipeline)  ---
 with DAG('business_department_dag', start_date=START_DATE, schedule_interval=None, catchup=False) as dag_bus:
     t_bus1 = PythonOperator(
         task_id='process_business_department',
@@ -155,7 +152,7 @@ with DAG('business_department_dag', start_date=START_DATE, schedule_interval=Non
     )
     t_bus1 >> t_bus2 >> t_bus3
 
-# --- 4. MARKETING ---
+# --- 4. MARKETING (Full Pipeline) ---
 with DAG('marketing_department_dag', start_date=START_DATE, schedule_interval=None, catchup=False) as dag_mktg:
     t_mktg1 = PythonOperator(
         task_id='process_marketing_department',
@@ -176,7 +173,7 @@ with DAG('marketing_department_dag', start_date=START_DATE, schedule_interval=No
         }
     )
     t_mktg1 >> t_mktg2 >> t_mktg3
-# --- 5. CUSTOMER MANAGEMENT ---
+# --- 5. CUSTOMER MANAGEMENT (Full Pipeline) ---
 with DAG('customer_management_department_dag', start_date=START_DATE, schedule_interval=None, catchup=False) as dag_cust:
     t_cust1 = PythonOperator(
         task_id='process_customer_management_department',
@@ -198,6 +195,7 @@ with DAG('customer_management_department_dag', start_date=START_DATE, schedule_i
         }
     )
     t_cust1 >> t_cust2 >> t_cust3
+
 
 
 
