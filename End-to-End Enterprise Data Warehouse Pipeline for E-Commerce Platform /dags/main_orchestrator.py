@@ -3,10 +3,10 @@ from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from datetime import datetime
 
 # ==========================================
-# MASTER CONTROLLER DAG
+#            MASTER CONTROLLER DAG
 # ==========================================
-# This DAG connects your existing Department DAGs with your new Transformation DAG.
-# Flow:
+# This DAG connects the existing Department DAGs with the Transformation DAG.
+# WorkFlow:
 # 1. Trigger all 5 Department DAGs (Operations, Enterprise, Business, Marketing, Customer)
 # 2. Wait for ALL to finish.
 # 3. Trigger the Unified Transformation DAG.
@@ -16,7 +16,7 @@ START_DATE = datetime(2023, 1, 1)
 with DAG(
     dag_id='master_pipeline_controller',
     start_date=START_DATE,
-    schedule_interval='@daily',  # Run everything once a day
+    schedule_interval='@daily', 
     catchup=False,
     tags=['master', 'orchestrator']
 ) as dag:
@@ -75,7 +75,7 @@ with DAG(
 
     # --- PHASE 2: TRIGGER TRANSFORMATION (Sequential) ---
     
-    # This triggers the DAG defined in 'unified_transformation_dag.py'
+    # This triggers the DAG defined in the 'unified_transformation_dag.py'
     trig_transform = TriggerDagRunOperator(
         task_id='trigger_unified_transformation',
         trigger_dag_id='unified_transformation_dag', 
@@ -86,7 +86,7 @@ with DAG(
     )
 
     # ==========================================
-    # DEPENDENCIES
+    #                 DEPENDENCIES
     # ==========================================
-    # Run all departments in parallel, then run transformation
+
     [trig_ops, trig_ent, trig_bus, trig_mktg, trig_cust] >> trig_transform
