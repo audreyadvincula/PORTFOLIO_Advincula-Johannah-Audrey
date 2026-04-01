@@ -1,1 +1,1 @@
-Contains R-script of the GLM model and the pdf file of the interpretations
+Contains Python Script of the GLM model and the pdf file of the interpretations
